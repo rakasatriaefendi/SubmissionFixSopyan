@@ -1,0 +1,59 @@
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const path = require('path');
+const { InjectManifest } = require('workbox-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'main.js',
+    clean: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html',
+      filename: 'index.html',
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'public/'),
+          to: path.resolve(__dirname, 'dist/'),
+          globOptions: {
+            ignore: ['**/index.html'],
+          },
+        },
+      ],
+    }),
+    new InjectManifest({
+      swSrc: './src/service-worker.js',
+      swDest: 'service-worker.js',
+    }),
+  ],
+devServer: {
+  static: {
+    directory: path.join(__dirname, 'dist'),
+  },
+  compress: true,
+  port: 8080,
+  open: true,
+  historyApiFallback: true,
+
+  proxy: {
+      '/v1': {
+      target: 'https://story-api.dicoding.dev',
+      changeOrigin: true,
+      secure: true,
+    },
+},
+},
+};

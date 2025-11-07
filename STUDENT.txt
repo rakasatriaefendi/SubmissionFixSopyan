@@ -1,0 +1,3 @@
+Name: Sopyan Dermawan
+Deployment URL: https://heroic-quokka-ca17f4.netlify.app/
+Platform: GitHub Pages
