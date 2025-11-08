@@ -1,3 +1,3 @@
 Name: Sopyan Dermawan
-Deployment URL: https://heroic-quokka-ca17f4.netlify.app/
-Platform: GitHub Pages
+Deployment URL: https://funny-heliotrope-9da80d.netlify.app/#/
+Platform: Netlify
