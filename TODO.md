@@ -11,8 +11,8 @@
 - [x] Update api.js to handle offline queue
 
 ## 3. Handle Redundant Service Worker on Deployment
-- [x] Move service-worker.js to public/ folder to avoid webpack generating duplicate
-- [x] Remove InjectManifest from webpack config
+- [x] Replace Workbox service worker with vanilla JS to avoid ES modules issues on Netlify
+- [x] Copy service-worker.js directly from src/ to dist/ via webpack
 - [x] Ensure only one service worker is registered
 
 ## 4. Testing and Verification

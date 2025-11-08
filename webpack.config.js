@@ -32,10 +32,12 @@ module.exports = {
             ignore: ['**/index.html'],
           },
         },
+        {
+          from: path.resolve(__dirname, 'src/service-worker.js'),
+          to: path.resolve(__dirname, 'dist/service-worker.js'),
+        },
       ],
     }),
-    // Remove InjectManifest to avoid duplicate service workers
-    // Service worker is now in public/ and copied by CopyWebpackPlugin
   ],
 
   devServer: {

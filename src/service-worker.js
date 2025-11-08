@@ -1,71 +1,52 @@
-import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
-import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
-import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-import { clientsClaim } from 'workbox-core';
+const CACHE_NAME = 'storymap-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/main.js',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
+];
 
-self.skipWaiting();
-clientsClaim();
-
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Cache the app shell for offline support
-const handler = createHandlerBoundToURL('/index.html');
-const navigationRoute = new NavigationRoute(handler, {
-  allowlist: [/^(?!\/__).*/], // Exclude URLs starting with /__
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Install');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Service Worker: Caching app shell');
+        return cache.addAll(urlsToCache);
+      })
+  );
+  self.skipWaiting();
 });
-registerRoute(navigationRoute);
 
-// Cache untuk API stories dengan strategi StaleWhileRevalidate
-registerRoute(
-  ({ url }) => url.href.startsWith('https://story-api.dicoding.dev/v1/stories'),
-  new StaleWhileRevalidate({
-    cacheName: 'storymap-api-cache',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxAgeSeconds: 60 * 60 * 24, // 1 hari
-      }),
-    ],
-  })
-);
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activate');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: Clearing old cache');
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
 
-// Cache untuk gambar dari API dengan strategi CacheFirst
-registerRoute(
-  ({ request }) => request.destination === 'image',
-  new CacheFirst({
-    cacheName: 'storymap-images-cache',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 hari
-      }),
-    ],
-  })
-);
-
-// Cache untuk peta (OpenStreetMap tiles)
-registerRoute(
-  ({ url }) => url.href.includes('tile.openstreetmap.org'),
-  new CacheFirst({
-    cacheName: 'storymap-map-tiles-cache',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 60 * 60 * 24 * 7, // 7 hari
-      }),
-    ],
-  })
-);
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Return cached version or fetch from network
+        return response || fetch(event.request);
+      }
+    )
+  );
+});
 
 self.addEventListener('push', (event) => {
   console.log('Service Worker: Push Received.');
@@ -83,18 +64,14 @@ self.addEventListener('push', (event) => {
 
   if (event.data) {
     try {
-
       const dataAsJson = event.data.json();
       notificationData.title = dataAsJson.title || notificationData.title;
       notificationData.options.body = dataAsJson.body || notificationData.options.body;
-
     } catch (e) {
-
       notificationData.options.body = event.data.text();
     }
   }
 
   const { title, options } = notificationData;
-
   event.waitUntil(self.registration.showNotification(title, options));
 });
