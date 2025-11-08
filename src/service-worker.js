@@ -5,7 +5,9 @@ const urlsToCache = [
   '/main.js',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  '/screenshots/home.png',
+  '/screenshots/add-story.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -38,13 +40,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Handle navigation requests
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // If offline, return cached index.html
+          return caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
+  // For other requests, try cache first, then network
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      }
-    )
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      })
   );
 });
 
